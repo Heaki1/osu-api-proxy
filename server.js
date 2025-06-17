@@ -6,8 +6,8 @@ const app = express();
 const port = 3000;
 
 // 🔒 Replace these with your actual osu! API credentials
-const client_id = process.env.CLIENT_ID;
-const client_secret = process.env.CLIENT_SECRET;
+const client_id = '41700';
+const client_secret = '2gBS9LgMq8uuo5tp6WlOsBaRTQSiJCzIYiFxKK2q';
 
 let access_token = null;
 let token_expiry = 0;
