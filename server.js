@@ -45,6 +45,39 @@ app.get('/api/beatmap/:id', async (req, res) => {
       headers: { Authorization: `Bearer ${token}` }
     });
 
+// 🔍 Search beatmap by title
+app.get('/api/search', async (req, res) => {
+  try {
+    const token = await getAccessToken();
+    const query = req.query.q;
+    if (!query) return res.status(400).json({ error: 'Missing ?q=title parameter' });
+
+    const response = await axios.get(`https://osu.ppy.sh/api/v2/search`, {
+      headers: { Authorization: `Bearer ${token}` },
+      params: {
+        mode: 'osu',
+        query,
+        type: 'beatmapset'
+      }
+    });
+
+    const sets = response.data.beatmapsets;
+    if (sets.length === 0) return res.status(404).json({ error: 'No results found' });
+
+    const top = sets[0];
+    res.json({
+      id: top.id,
+      title: `${top.artist} - ${top.title} (${top.creator})`,
+      url: `https://osu.ppy.sh/beatmapsets/${top.id}`,
+      preview_url: top.preview_url,
+      cover_url: top.covers.card
+    });
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.status(500).json({ error: 'Failed to search beatmaps' });
+  }
+});
+
  const bm = response.data;
 const data = {
   id: bm.id,
