@@ -68,7 +68,10 @@ app.get('/api/search', async (req, res) => {
     if (!query) return res.status(400).json({ error: 'Missing ?q=title parameter' });
 
     const response = await axios.get('https://osu.ppy.sh/api/v2/search', {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json'
+      },
       params: {
         mode: 'osu',
         query,
@@ -78,7 +81,7 @@ app.get('/api/search', async (req, res) => {
 
     const sets = response.data.beatmapsets;
     if (!sets || sets.length === 0) {
-      console.error("Search API response:", response.data); // 👈 Log full response
+      console.error("Search API response:", response.data);
       return res.status(404).json({ error: 'No results found' });
     }
 
