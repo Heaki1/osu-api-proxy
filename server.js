@@ -1,24 +1,19 @@
-
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 
-const app = express();       // ✅ Only declare once!
-app.use(cors());             // ✅ Safe to call now
+const app = express();
+app.use(cors());
 
 const port = process.env.PORT || 3000;
 
-
-// 🔒 Replace these with your actual osu! API credentials
+// osu! credentials
 const client_id = '41700';
 const client_secret = '2gBS9LgMq8uuo5tp6WlOsBaRTQSiJCzIYiFxKK2q';
 
 let access_token = null;
 let token_expiry = 0;
 
-app.use(cors());
-
-// Fetch a new access token if needed
 async function getAccessToken() {
   const now = Date.now();
   if (access_token && now < token_expiry) return access_token;
@@ -35,7 +30,7 @@ async function getAccessToken() {
   return access_token;
 }
 
-// Beatmap info endpoint
+// ✅ /api/beatmap/:id
 app.get('/api/beatmap/:id', async (req, res) => {
   try {
     const token = await getAccessToken();
@@ -45,7 +40,28 @@ app.get('/api/beatmap/:id', async (req, res) => {
       headers: { Authorization: `Bearer ${token}` }
     });
 
-// 🔍 Search beatmap by title
+    const bm = response.data;
+    const data = {
+      id: bm.id,
+      title: `${bm.beatmapset.artist} - ${bm.beatmapset.title} (${bm.beatmapset.creator})`,
+      stars: `${bm.difficulty_rating.toFixed(1)}★`,
+      cs: bm.cs,
+      ar: bm.ar,
+      od: bm.accuracy,
+      bpm: bm.bpm,
+      url: `https://osu.ppy.sh/beatmapsets/${bm.beatmapset.id}#osu/${bm.id}`,
+      preview_url: bm.beatmapset.preview_url,
+      cover_url: bm.beatmapset.covers.card
+    };
+
+    res.json(data);
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.status(500).json({ error: 'Failed to fetch beatmap info from osu! API' });
+  }
+});
+
+// ✅ /api/search
 app.get('/api/search', async (req, res) => {
   try {
     const token = await getAccessToken();
@@ -75,28 +91,6 @@ app.get('/api/search', async (req, res) => {
   } catch (err) {
     console.error(err.response?.data || err.message);
     res.status(500).json({ error: 'Failed to search beatmaps' });
-  }
-});
-
- const bm = response.data;
-const data = {
-  id: bm.id,
-  title: `${bm.beatmapset.artist} - ${bm.beatmapset.title} (${bm.beatmapset.creator})`,
-  stars: `${bm.difficulty_rating.toFixed(1)}★`,
-  cs: bm.cs,
-  ar: bm.ar,
-  od: bm.accuracy,
-  bpm: bm.bpm,
-  url: `https://osu.ppy.sh/beatmapsets/${bm.beatmapset.id}#osu/${bm.id}`,
-  preview_url: bm.beatmapset.preview_url,
-  cover_url: bm.beatmapset.covers.card
-};
-
-
-    res.json(data);
-  } catch (err) {
-    console.error(err.response?.data || err.message);
-    res.status(500).json({ error: 'Failed to fetch beatmap info from osu! API' });
   }
 });
 
