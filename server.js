@@ -61,14 +61,13 @@ app.get('/api/beatmap/:id', async (req, res) => {
   }
 });
 
-// ✅ /api/search
 app.get('/api/search', async (req, res) => {
   try {
     const token = await getAccessToken();
     const query = req.query.q;
     if (!query) return res.status(400).json({ error: 'Missing ?q=title parameter' });
 
-    const response = await axios.get(`https://osu.ppy.sh/api/v2/search`, {
+    const response = await axios.get('https://osu.ppy.sh/api/v2/search', {
       headers: { Authorization: `Bearer ${token}` },
       params: {
         mode: 'osu',
@@ -78,7 +77,10 @@ app.get('/api/search', async (req, res) => {
     });
 
     const sets = response.data.beatmapsets;
-    if (sets.length === 0) return res.status(404).json({ error: 'No results found' });
+    if (!sets || sets.length === 0) {
+      console.error("Search API response:", response.data); // 👈 Log full response
+      return res.status(404).json({ error: 'No results found' });
+    }
 
     const top = sets[0];
     res.json({
@@ -88,11 +90,13 @@ app.get('/api/search', async (req, res) => {
       preview_url: top.preview_url,
       cover_url: top.covers.card
     });
+
   } catch (err) {
-    console.error(err.response?.data || err.message);
+    console.error("Search Error:", err.response?.data || err.message, err.response?.status);
     res.status(500).json({ error: 'Failed to search beatmaps' });
   }
 });
+
 
 app.listen(port, () => {
   console.log(`osu! beatmap API proxy running at http://localhost:${port}`);
