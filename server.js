@@ -79,9 +79,11 @@ app.get('/api/search', async (req, res) => {
       }
     });
 
+    // 🔍 Log everything returned by the osu! API for inspection
+    console.log("🟢 osu! raw response:", JSON.stringify(response.data, null, 2));
+
     const sets = response.data.beatmapsets;
     if (!sets || sets.length === 0) {
-      console.error("Search API response:", response.data);
       return res.status(404).json({ error: 'No results found' });
     }
 
@@ -95,7 +97,7 @@ app.get('/api/search', async (req, res) => {
     });
 
   } catch (err) {
-    console.error("Search Error:", err.response?.data || err.message, err.response?.status);
+    console.error("❌ Search Error:", err.response?.data || err.message, err.response?.status);
     res.status(500).json({ error: 'Failed to search beatmaps' });
   }
 });
