@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algerian osu! Tournament Rules</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: rgba(255, 240, 245, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #333;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h2, .section-title {
+            color: #34495e;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 5px;
+            margin-top: 25px;
+            margin-bottom: 20px;
+        }
+        
+        h3 {
+            color: #2980b9;
+            margin-top: 20px;
+        }
+        
+        .notice {
+            background: #f8f9fa;
+            border-left: 5px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            color: #333;
+        }
+       
+        .staff-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .staff-role {
+            background: rgba(96, 125, 139, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(96, 125, 139, 0.5);
+        }
+
+        .staff-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #4ecdc4;
+            margin-bottom: 8px;
+        }
+        .staff-role:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        
+        
+        .staff-role > div:last-child {
+            color: #fff;
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+        
+        /* Color coding for different types of information */
+        .tournament-type { color: #e74c3c; font-weight: bold; }
+        .eligibility { color: #27ae60; font-weight: bold; }
+        .format { color: #8e44ad; font-weight: bold; }
+        .timing { color: #f39c12; font-weight: bold; }
+        .advancement { color: #2980b9; font-weight: bold; }
+        .rules { color: #c0392b; font-weight: bold; }
+        .penalties { color: #e67e22; font-weight: bold; }
+        .technical { color: #16a085; font-weight: bold; }
+        
+        /* Mod colors matching osu! standards */
+        .nm { color: #4CAF50; font-weight: bold; }
+        .hd { color: #2196F3; font-weight: bold; }
+        .hr { color: #F44336; font-weight: bold; }
+        .dt { color: #FF9800; font-weight: bold; }
+        .fm { color: #9C27B0; font-weight: bold; }
+        .ez { color: #00BCD4; font-weight: bold; }
+        .tb { color: #795548; font-weight: bold; }
+        .nf { color: #607D8B; font-weight: bold; }
+        
+        ul, ol {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        .center {
+            text-align: center;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+            border: 1px solid #ffeaa7;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .staff-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            body {
+                padding: 10px;
+            }
+            
+            .container, .section {
+                padding: 20px;
+            }
+
+ .title-container {
+    display: flex;
+    justify-content: center; 
+    gap: 40px;               
+    margin-top: 30px;        
+   }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Algerian Community Tournament</h1>
+
+<div class="center" style="margin: 10px 0;">
+            <img src="https://html5.s-ul.eu/GmNy6oLQ" alt="Rules Banner" style="max-width: 100%; border-radius: 10px; box-shadow: 5 10px 15px rgba(0,0,0,0.2);">
+        </div>
+
+  <div class="title-container">
+  <h2 style="display: inline-block; margin-right: 15px;">  Mainsheet </h2>
+  <h2 style="display: inline-block; margin-right: 15px;">Player Registration </h2>
+  <h2 style="display: inline-block; margin-right: 15px;">Staff Registration </h2>
+  <h2 style="display: inline-block; margin-right: 15px;">Discord </h2>
+  <h2 style="display: inline-block; margin-right: 15px;">Bracket </h2>
+</div>
+
+        <div class="center" style="margin: 20px 0;">
+            <img src="https://html5.s-ul.eu/JMY6WsWw" alt="Rules Banner" style="max-width: 100%; border-radius: 10px; box-shadow: 0 10px 15px rgba(0,0,0,0.3);">
+        </div>
+        
+        <div class="notice">
+            <h2>📋 General Rules</h2>
+            <ul>
+                <li><span class="tournament-type">Algerian community tournament</span> is a <span class="format">1v1 osu!standard tournament</span> with <span class="eligibility">open rank range</span>.</li>
+                <li>Only players with a <span class="eligibility">profile flag from Algeria</span> are eligible — including <span class="eligibility">Algerians living abroad</span>.</li>
+                <li>All matches will be played using <span class="format">Head to Head</span>, <span class="technical">ScoreV2</span>, and <span class="nf">NF (No Fail)</span> enforced.</li>
+                <li>The <span class="advancement">top 16 players</span> from the qualifiers will advance to the next stage.</li>
+                <li>All participants must <span class="rules">join the Discord server</span>.</li>
+                <li><span class="rules">Staff members</span> (other than streamers, commentators, referee and graphic designers) are <span class="rules">not allowed to participate</span>.</li>
+                <li>Players must be <span class="rules">respectful at all times</span>.</li>
+            </ul>
+        </div>
+
+        <div class="center" style="margin: 20px 0;">
+            <img src="https://html5.s-ul.eu/bv7bdGNS" alt="Info Banner" style="max-width: 100%; border-radius: 10px; box-shadow: 0 10px 15px rgba(0,0,0,0.3);">
+        </div>
+        
+        <div class="notice">
+            <h2>🎯 Qualifiers</h2>
+            <ul>
+                <li>Players are responsible for <span class="timing">scheduling a lobby</span> that fits them</li>
+                <li>Lobbies should be scheduled <span class="timing">24 hours in advance</span>. Exceptions from this rule can be granted after talking to staff.</li>
+                <li>Players play through the qualifier pool <span class="format">once</span> (Played in fixed order <span class="nm">NM</span>1 → <span class="dt">DT</span>2).</li>
+                <li>If a player <span class="penalties">miss/be late</span> to their lobby, they are allowed to <span class="timing">reschedule</span> for a new time, or ask the referee to play the missed maps at the end of the lobby</li>
+                <li><span class="format">Qualifier round</span> used to determine <span class="advancement">seeding</span> for the bracket stage.</li>
+                <li><strong>Mappool includes <span class="highlight">11 maps</span>:</strong>
+                    <ul>
+                        <li>5 <span class="nm">NM</span>, 2 <span class="hd">HD</span>, 2 <span class="hr">HR</span>, 2 <span class="dt">DT</span></li>
+                    </ul>
+                 <li>2-minute<span class="timing"> ready timer</span>, 5-minute <span class="timing">grace period</span></li>
+                 <li><span class="advancement">Top 16 players</span> advance to <span class="format">Round of 16 (RO16)</span>.</li>
+            </ul>
+
+            <h2>🏆 Bracket Stage</h2>
+            <p><span class="format">Single Elimination format</span>.</p>
+            
+            <h3>Match Formats by Round:</h3>
+            <ul>
+                <li><strong><span class="format">Round of 16</span>(RO16) : BO9 (Best of 9)</li>
+                <li><strong><span class="format">Quarterfinals </span> (QF) & <span class="format">Semifinals x</span>(SF) : BO11 (Best of 11)</li>
+                <li><strong><span class="format">Finals </span>(F) : BO13 (Best of 13)</li>
+            </ul>
+
+            <h3>Freemod Rules:</h3>
+            <ul>
+                </li>
+                <li><span class="fm">FM map</span> requires at least one of the following mods: <span class="hd">HD</span>, <span class="hr">HR</span>, <span class="technical">FL</span>, <span class="ez">EZ</span></li> 
+                <li><strong>Mods combination is allowed 
+                <li><span class="ez">EZ</span> has a <span class="technical">1.8x score multiplier</span></li>
+            </ul>
+
+            <h2>⚙️ Match Procedures</h2>
+            <ul>
+                <li>A <span class="technical">referee</span> will create the match lobby before the scheduled start time and invite both players.</li>
+                <li>Players are required to arrive <span class="timing">on time</span> and be <span class="rules">fully prepared</span>. Referees may exercise discretion if a player appears unready.</li>
+                <li>If a player fails to join within <span class="penalties">5 minutes</span> of the scheduled match time, they will lose both their <span class="penalties">roll and bans</span>.</li>
+                <li>If a player fails to join within <span class="penalties">10 minutes</span>, they will <span class="penalties">forfeit the match</span>.</li>
+                <li><span class="rules">Warmups are allowed</span>.</li>
+            </ul>
+
+            <h3>🎲 Rolling, Picks & Bans</h3>
+            <ol>
+                <li>Both players must use the <span class="technical">!roll command</span>.</li>
+                <li>The player with the <span class="advancement">higher roll</span> chooses either:
+                    <ul>
+                        <li>To <span class="format">pick first or second</span>.</li>
+                        <li>To <span class="format">ban first or second</span>.</li>
+                    </ul>
+                </li>
+                <li>The <span class="format">loser</span> chooses the remaining option.</li>
+                <li>There are <span class="rules">no restrictions</span> on which maps can be picked or banned.</li>
+            </ol>
+
+            <h3>🚫 Ban System Details:</h3>
+            <ul>
+                <li>Each player gets <span class="rules">2 bans</span>:</li>
+                <li>The <span class="rules">first ban</span> occurs at the start of the match (1 per player).</li>
+                <li>The <span class="rules">second ban</span> occurs after <span class="timing">4 maps</span> have been played.</li>
+                <li>Ban order follows <span class="format">ABBA format</span>:</li>
+                <li><em>Example: Player A bans → Player B bans → (after 4 maps) Player B bans → Player A bans</em></li>
+            </ul>
+
+            <h2>⏰ Timers</h2>
+            <ul>Players are given 
+                <li>Players are given<span class="timing">90 seconds</span> to declare a <span class="rules">ban</span>. Failure to do so results in <span class="penalties">losing that ban</span>.</li>
+                <li>Players are given<span class="timing">90 seconds</span> to declare a <span class="rules">pick</span>. If they fail, a <span class="technical">random map</span> will be selected using <span class="technical">!roll</span>.</li>
+                <li>Once a map is picked, both players have <span class="timing">90 seconds</span> to <span class="rules">ready up</span>. After that, the referee will <span class="technical">force start</span> the match.</li>
+            </ul>
+
+            <h2>🔄 Tiebreaker</h2>
+            <ul>
+                <li>The <span class="tb">TB (Tiebreaker)</span> will be played with <span class="fm">FM (Freemods)</span> enabled.</li>
+                <li>Mods are <span class="rules">optional</span> on <span class="tb">TB (Tiebreaker)</span>, but <span class="nf">NF (NoFail)</span> is always enforced.</li>
+            </ul>
+
+            <h2>🔌 Disconnection</h2>
+            <ul>
+                <li>If a player disconnects within the <span class="timing">first 30 seconds</span> of a map, a <span class="technical">replay</span> may be granted.</li>
+                <li>Each player is allowed a maximum of <span class="rules">1 replay per match</span>.</li>
+                <li>If a player disconnects later in the map:
+                    <ul>
+                        <li>If clear <span class="technical">score proof</span> exists, it may be used to determine the result.</li>
+                        <li>If the outcome is unclear, the point goes to the <span class="advancement">opposing player</span>.</li>
+                    </ul>
+                </li>
+                <li><strong>Acceptable disconnection causes:</strong> <span class="technical">hardware failure</span>, <span class="technical">system crash</span>, <span class="technical">internet loss</span>.</li>
+            </ul>
+        </div>
+
+        <div class="center" style="margin: 20px 0;">
+            <img src="https://html5.s-ul.eu/pxjP5FZX" alt="Tournament Banner" style="max-width: 100%; border-radius: 10px; box-shadow: 0 10px 15px rgba(0,0,0,0.3);">
+        </div>
+        
+        <div class="section">
+            <h2>📅 Tournament Schedule</h2>
+            <ul>
+                <li><strong>June 21 - July 13</strong> • <span class="timing">Registration Period</span></li>
+                <li><strong>July 14 - July 15</strong> • <span class="technical">Player Screening</span></li>
+                <li><strong>July 17 - July 19</strong> • <span class="format">Qualifiers</span></li>
+                <li><strong>July 24 - July 26</strong> • <span class="format">Round of 16</span></li>
+                <li><strong>July 31 - August 2</strong> • <span class="format">Quarterfinals</span></li>
+                <li><strong>August 7 - August 9</strong> • <span class="format">Semifinals</span></li>
+                <li><strong>August 14 - August 16</strong> • <span class="format">Finals</span></li>
+            </ul>
+        </div>
+        
+        <div class="center" style="margin: 20px 0;">
+            <img src="https://html5.s-ul.eu/PXua4hzs" alt="Tournament Banner" style="max-width: 100%; border-radius: 10px; box-shadow: 0 10px 15px rgba(0,0,0,0.3);">
+        </div>
+        
+        <div class="section">
+            <h2>🏅 Prizes</h2>
+            <div class="center">
+                <h3 style="color: #ffd700; font-size: 1.3em;">🥇 1st Place</h3>
+                <ul style="list-style: none; padding: 0;">
+                    <li>🎫 6 Months osu! Supporter</li>
+                    <li>🎨 Profile Banner</li>
+                </ul>
+                
+                <h3 style="color: #c0c0c0; font-size: 1.3em;">🥈 2nd Place</h3>
+                <ul style="list-style: none; padding: 0;">
+                    <li>🎫 1 Months osu! Supporter</li>
+                    <li>🎨 Profile Banner</li>
+                </ul>
+                
+
+                <p style="font-style: italic; color: #7f8c8d; margin-top: 30px;">💝 Want to support the prize pool? DM <span class="format">Heaki</span></p>
+            </div>
+        </div>
+
+        <div class="center" style="margin: 20px 0;">
+            <img src="https://html5.s-ul.eu/8cPbAGm7" alt="Staff Banner" style="max-width: 100%; border-radius: 10px; box-shadow: 0 10px 15px rgba(0,0,0,0.3);">
+        </div>
+        
+       
+        <div class="section">
+            <h2 class="section-title">👥 Tournament Staff</h2>
+            <div class="staff-grid">
+                <div class="staff-role">
+                    <div class="staff-title">Host</div>
+                    <div><span class="tournament-type">Heaki</span></div>
+                </div>
+                <div class="staff-role">
+                    <div class="staff-title">Co-Host</div>
+                    <div><span class="tournament-type">Akizero</span></div>
+                </div>
+                <div class="staff-role">
+                    <div class="staff-title">Graphics</div>
+                    <div><span class="tournament-type">Adiou , Heaki</span></div>
+                </div>
+                <div class="staff-role">
+                    <div class="staff-title">Sheeter</div>
+                    <div><span class="tournament-type">Heaki</span></div>
+                </div>
+                <div class="staff-role">
+                    <div class="staff-title">Mappoolers</div>
+                    <div><span class="tournament-type">Akizero , Heaki</span></div>
+                </div>
+                <div class="staff-role">
+                    <div class="staff-title">Playtesters</div>
+                    <div><span class="tournament-type">Akizero , Maldevius , TerraPie , Oryn </span></div>
+                </div>
+                <div class="staff-role">
+                    <div class="staff-title">Referees</div>
+                    <div><span class="tournament-type">Data Vortex , Heaki  3OTSHIMA</span></div>
+                </div>
+                <div class="staff-role">
+                    <div class="staff-title">Streamers</div>
+                    <div><span class="tournament-type">TerraPie , real-99</span></div>
+                </div>
+                <div class="staff-role">
+                    <div class="staff-title">Commentators</div>
+                    <div><span class="tournament-type">Akizero , Heaki</span></div>
+                </div>
+            </div>
+       <p style="font-style: italic; color: #7f8c8d; margin-top: 40px;">Feel free to give us feedback.</p>
+       <p style="font-style: italic; color: #7f8c8d; margin-top: 5px; text-align: center;">Official tournament report link.</p>
+       
+    </div>
+</body>
+</html>
