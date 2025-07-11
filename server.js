@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 app.use(cors());
@@ -14,6 +15,14 @@ const client_secret = '2gBS9LgMq8uuo5tp6WlOsBaRTQSiJCzIYiFxKK2q';
 let access_token = null;
 let token_expiry = 0;
 
+// ⏱️ Format seconds to MM:SS
+function formatSeconds(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+// 🧠 Get osu! API token
 async function getAccessToken() {
   const now = Date.now();
   if (access_token && now < token_expiry) return access_token;
@@ -30,7 +39,7 @@ async function getAccessToken() {
   return access_token;
 }
 
-// ✅ /api/beatmap/:id
+// ✅ Beatmap info route
 app.get('/api/beatmap/:id', async (req, res) => {
   try {
     const token = await getAccessToken();
@@ -41,6 +50,7 @@ app.get('/api/beatmap/:id', async (req, res) => {
     });
 
     const bm = response.data;
+
     const data = {
       id: bm.id,
       title: `${bm.beatmapset.artist} - ${bm.beatmapset.title} (${bm.beatmapset.creator})`,
@@ -49,6 +59,7 @@ app.get('/api/beatmap/:id', async (req, res) => {
       ar: bm.ar,
       od: bm.accuracy,
       bpm: bm.bpm,
+      length: formatSeconds(bm.total_length), // ✅ Added length here
       url: `https://osu.ppy.sh/beatmapsets/${bm.beatmapset.id}#osu/${bm.id}`,
       preview_url: bm.beatmapset.preview_url,
       cover_url: bm.beatmapset.covers.card
@@ -61,6 +72,7 @@ app.get('/api/beatmap/:id', async (req, res) => {
   }
 });
 
+// 🔍 Optional search route
 app.get('/api/search', async (req, res) => {
   try {
     const token = await getAccessToken();
@@ -78,9 +90,6 @@ app.get('/api/search', async (req, res) => {
         type: 'beatmapset'
       }
     });
-
-    // 🔍 Log everything returned by the osu! API for inspection
-    console.log("🟢 osu! raw response:", JSON.stringify(response.data, null, 2));
 
     const sets = response.data.beatmapsets;
     if (!sets || sets.length === 0) {
@@ -102,9 +111,10 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
-const path = require('path');
+// Static frontend
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Start server
 app.listen(port, () => {
   console.log(`osu! beatmap API proxy running at http://localhost:${port}`);
 });
