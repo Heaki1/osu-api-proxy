@@ -149,6 +149,7 @@ for (const score of topScores) {
 
     const scores = leaderboardRes.data.scores;
     const found = scores.find((s) => s.user.id === userId);
+    console.log(`Checking map ${beatmapId} | Found in leaderboard:`, !!found);
 
     if (found) {
       leaderboardMatches.push({
