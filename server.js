@@ -139,8 +139,7 @@ app.get('/api/leaderboard-scores', async (req, res) => {
 
 for (const score of topScores) {
   const beatmapId = score.beatmap?.id;
-
-  if (!beatmapId || !score.beatmap?.beatmapset) continue; // 🔒 skip broken maps safely
+  if (!beatmapId || !score.beatmap?.beatmapset) continue;
 
   try {
     const leaderboardRes = await axios.get(`https://osu.ppy.sh/api/v2/beatmaps/${beatmapId}/scores`, {
@@ -149,7 +148,9 @@ for (const score of topScores) {
 
     const scores = leaderboardRes.data.scores;
     const found = scores.find((s) => s.user.id === userId);
-    console.log(`Checking map ${beatmapId} | Found in leaderboard:`, !!found);
+
+    // 🔍 Add this debug log here
+    console.log(`🎯 Checked map ${beatmapId} | Found in leaderboard: ${!!found}`);
 
     if (found) {
       leaderboardMatches.push({
@@ -166,9 +167,10 @@ for (const score of topScores) {
     }
   } catch (err) {
     console.warn(`⚠️ Failed leaderboard check for beatmap ${beatmapId}:`, err.response?.data || err.message);
-    continue; // skip this map and continue with next
+    continue;
   }
 }
+
   
     res.json(leaderboardMatches);
   } catch (err) {
