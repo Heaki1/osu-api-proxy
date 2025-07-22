@@ -4,41 +4,63 @@
   <title>osu! Leaderboard Viewer</title>
   <style>
     body { font-family: sans-serif; text-align: center; padding: 2rem; }
-    input { padding: 0.5rem; width: 250px; }
-    table { margin: auto; border-collapse: collapse; width: 90%; margin-top: 2rem; }
-    th, td { border: 1px solid #ccc; padding: 10px; }
-    a { text-decoration: none; color: #3366cc; }
+    input, button { padding: 0.6rem 1rem; font-size: 1rem; }
+    input { width: 250px; }
+    table { margin: 2rem auto; border-collapse: collapse; width: 90%; }
+    th, td { border: 1px solid #ccc; padding: 8px; }
+    a { color: #0077cc; text-decoration: none; }
   </style>
 </head>
 <body>
-  <h1>osu! Leaderboard Scores</h1>
+  <h1>osu! Global Leaderboard Scores</h1>
   <input id="username" placeholder="Enter osu! username">
-  <button onclick="load()">Check Leaderboard</button>
+  <button onclick="fetchScores()">Fetch</button>
 
+  <div id="loading" style="margin-top: 1rem;"></div>
   <table id="results"></table>
 
   <script>
-    async function load() {
-      const username = document.getElementById('username').value;
-      const res = await fetch(`/api/leaderboard-scores?user=${username}`);
-      const data = await res.json();
-
+    async function fetchScores() {
+      const user = document.getElementById('username').value;
+      const loading = document.getElementById('loading');
       const table = document.getElementById('results');
-      table.innerHTML = `
-        <tr><th>Rank</th><th>Beatmap</th><th>Score</th><th>Accuracy</th><th>Mods</th></tr>
-      `;
 
-      data.forEach(entry => {
-        table.innerHTML += `
-          <tr>
-            <td>#${entry.rank}</td>
-            <td><a href="${entry.beatmap.url}" target="_blank">${entry.beatmap.title}</a></td>
-            <td>${entry.score.toLocaleString()}</td>
-            <td>${entry.accuracy}</td>
-            <td>${entry.mods}</td>
-          </tr>
+      loading.innerText = "Loading...";
+      table.innerHTML = "";
+
+      try {
+        const res = await fetch(`/api/leaderboard-scores?user=${user}`);
+        const scores = await res.json();
+
+        if (!Array.isArray(scores)) {
+          loading.innerText = "Error: " + (scores.error || "Unexpected response");
+          return;
+        }
+
+        loading.innerText = "";
+        table.innerHTML = `
+          <tr><th>Rank</th><th>Beatmap</th><th>Score</th><th>Accuracy</th><th>Mods</th></tr>
         `;
-      });
+
+        scores.forEach(s => {
+          table.innerHTML += `
+            <tr>
+              <td>#${s.rank}</td>
+              <td><a href="${s.beatmap.url}" target="_blank">${s.beatmap.title}</a></td>
+              <td>${s.score.toLocaleString()}</td>
+              <td>${s.accuracy}</td>
+              <td>${s.mods}</td>
+            </tr>
+          `;
+        });
+
+        if (scores.length === 0) {
+          loading.innerText = "No leaderboard scores found.";
+        }
+      } catch (err) {
+        loading.innerText = "Failed to load data.";
+        console.error(err);
+      }
     }
   </script>
 </body>
