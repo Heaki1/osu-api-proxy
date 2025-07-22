@@ -137,35 +137,38 @@ app.get('/api/leaderboard-scores', async (req, res) => {
     const topScores = topScoresRes.data;
     const leaderboardMatches = [];
 
-    // 3. For each top play, check if user is in global leaderboard
-    for (const score of topScores) {
-      const beatmapId = score.beatmap.id;
+for (const score of topScores) {
+  const beatmapId = score.beatmap?.id;
 
-      const leaderboardRes = await axios.get(`https://osu.ppy.sh/api/v2/beatmaps/${beatmapId}/scores`, {
-        headers: { Authorization: `Bearer ${token}` }
+  if (!beatmapId || !score.beatmap?.beatmapset) continue; // 🔒 skip broken maps safely
+
+  try {
+    const leaderboardRes = await axios.get(`https://osu.ppy.sh/api/v2/beatmaps/${beatmapId}/scores`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const scores = leaderboardRes.data.scores;
+    const found = scores.find((s) => s.user.id === userId);
+
+    if (found) {
+      leaderboardMatches.push({
+        beatmap: {
+          id: score.beatmap.id,
+          title: `${score.beatmap.beatmapset.artist} - ${score.beatmap.beatmapset.title} [${score.beatmap.version}]`,
+          url: `https://osu.ppy.sh/beatmaps/${score.beatmap.id}`
+        },
+        rank: scores.findIndex(s => s.user.id === userId) + 1,
+        score: found.score,
+        accuracy: (found.accuracy * 100).toFixed(2) + '%',
+        mods: found.mods.join(',') || 'None'
       });
-
-      const scores = leaderboardRes.data.scores;
-      const found = scores.find((s) => s.user.id === userId);
-
-      if (found) {
-    if (score.beatmap && score.beatmap.beatmapset) {
-  leaderboardMatches.push({
-    beatmap: {
-      id: score.beatmap.id,
-      title: `${score.beatmap.beatmapset.artist} - ${score.beatmap.beatmapset.title} [${score.beatmap.version}]`,
-      url: `https://osu.ppy.sh/beatmaps/${score.beatmap.id}`
-    },
-    rank: scores.findIndex(s => s.user.id === userId) + 1,
-    score: found.score,
-    accuracy: (found.accuracy * 100).toFixed(2) + '%',
-    mods: found.mods.join(',') || 'None'
-  });
-}
-
-      }
     }
-
+  } catch (err) {
+    console.warn(`⚠️ Failed leaderboard check for beatmap ${beatmapId}:`, err.response?.data || err.message);
+    continue; // skip this map and continue with next
+  }
+}
+  
     res.json(leaderboardMatches);
   } catch (err) {
     console.error("❌ Leaderboard Score Fetch Error:", err.response?.data || err.message);
