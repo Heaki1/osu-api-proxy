@@ -149,17 +149,20 @@ app.get('/api/leaderboard-scores', async (req, res) => {
       const found = scores.find((s) => s.user.id === userId);
 
       if (found) {
-        leaderboardMatches.push({
-          beatmap: {
-            id: score.beatmap.id,
-            title: `${score.beatmap.beatmapset.artist} - ${score.beatmap.beatmapset.title} [${score.beatmap.version}]`,
-            url: `https://osu.ppy.sh/beatmaps/${score.beatmap.id}`
-          },
-          rank: scores.findIndex(s => s.user.id === userId) + 1,
-          score: found.score,
-          accuracy: (found.accuracy * 100).toFixed(2) + '%',
-          mods: found.mods.join(',') || 'None'
-        });
+    if (score.beatmap && score.beatmap.beatmapset) {
+  leaderboardMatches.push({
+    beatmap: {
+      id: score.beatmap.id,
+      title: `${score.beatmap.beatmapset.artist} - ${score.beatmap.beatmapset.title} [${score.beatmap.version}]`,
+      url: `https://osu.ppy.sh/beatmaps/${score.beatmap.id}`
+    },
+    rank: scores.findIndex(s => s.user.id === userId) + 1,
+    score: found.score,
+    accuracy: (found.accuracy * 100).toFixed(2) + '%',
+    mods: found.mods.join(',') || 'None'
+  });
+}
+
       }
     }
 
