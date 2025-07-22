@@ -115,10 +115,6 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
-// Start server
-app.listen(port, () => {
-  console.log(`✅ osu! beatmap API proxy running at http://localhost:${port}`);
-});
 // 🔝 GET /api/leaderboard-scores?user=username
 app.get('/api/leaderboard-scores', async (req, res) => {
   const username = req.query.user;
@@ -172,4 +168,8 @@ app.get('/api/leaderboard-scores', async (req, res) => {
     console.error("❌ Leaderboard Score Fetch Error:", err.response?.data || err.message);
     res.status(500).json({ error: 'Failed to fetch leaderboard scores' });
   }
+});
+// Start server
+app.listen(port, () => {
+  console.log(`✅ osu! beatmap API proxy running at http://localhost:${port}`);
 });
