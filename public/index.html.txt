@@ -1,0 +1,45 @@
+!DOCTYPE html
+html
+head
+  titleosu! Leaderboard Viewertitle
+  style
+    body { font-family sans-serif; text-align center; padding 2rem; }
+    input { padding 0.5rem; width 250px; }
+    table { margin auto; border-collapse collapse; width 90%; margin-top 2rem; }
+    th, td { border 1px solid #ccc; padding 10px; }
+    a { text-decoration none; color #3366cc; }
+  style
+head
+body
+  h1osu! Leaderboard Scoresh1
+  input id=username placeholder=Enter osu! username
+  button onclick=load()Check Leaderboardbutton
+
+  table id=resultstable
+
+  script
+    async function load() {
+      const username = document.getElementById('username').value;
+      const res = await fetch(`apileaderboard-scoresuser=${username}`);
+      const data = await res.json();
+
+      const table = document.getElementById('results');
+      table.innerHTML = `
+        trthRankththBeatmapththScoreththAccuracyththModsthtr
+      `;
+
+      data.forEach(entry = {
+        table.innerHTML += `
+          tr
+            td#${entry.rank}td
+            tda href=${entry.beatmap.url} target=_blank${entry.beatmap.title}atd
+            td${entry.score.toLocaleString()}td
+            td${entry.accuracy}td
+            td${entry.mods}td
+          tr
+        `;
+      });
+    }
+  script
+body
+html
