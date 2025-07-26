@@ -115,6 +115,69 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
+// 🔝 GET /api/leaderboard-scores?user=username
+app.get('/api/leaderboard-scores', async (req, res) => {
+  const username = req.query.user;
+  if (!username) return res.status(400).json({ error: 'Missing ?user=username' });
+
+  try {
+    const token = await getAccessToken();
+
+    // 1. Get user ID
+    const userRes = await axios.get(`https://osu.ppy.sh/api/v2/users/${username}/osu`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const userId = userRes.data.id;
+
+    // 2. Get top 50 scores
+    const topScoresRes = await axios.get(`https://osu.ppy.sh/api/v2/users/${userId}/scores/best?limit=50`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const topScores = topScoresRes.data;
+    const leaderboardMatches = [];
+
+for (const score of topScores) {
+  const beatmapId = score.beatmap?.id;
+  if (!beatmapId || !score.beatmap?.beatmapset) continue;
+
+  try {
+    const leaderboardRes = await axios.get(`https://osu.ppy.sh/api/v2/beatmaps/${beatmapId}/scores`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const scores = leaderboardRes.data.scores;
+    const found = scores.find((s) => s.user.id === userId);
+
+    // 🔍 Add this debug log here
+    console.log(`🎯 Checked map ${beatmapId} | Found in leaderboard: ${!!found}`);
+
+    if (found) {
+      leaderboardMatches.push({
+        beatmap: {
+          id: score.beatmap.id,
+          title: `${score.beatmap.beatmapset.artist} - ${score.beatmap.beatmapset.title} [${score.beatmap.version}]`,
+          url: `https://osu.ppy.sh/beatmaps/${score.beatmap.id}`
+        },
+        rank: scores.findIndex(s => s.user.id === userId) + 1,
+        score: found.score,
+        accuracy: (found.accuracy * 100).toFixed(2) + '%',
+        mods: found.mods.join(',') || 'None'
+      });
+    }
+  } catch (err) {
+    console.warn(`⚠️ Failed leaderboard check for beatmap ${beatmapId}:`, err.response?.data || err.message);
+    continue;
+  }
+}
+
+  
+    res.json(leaderboardMatches);
+  } catch (err) {
+    console.error("❌ Leaderboard Score Fetch Error:", err.response?.data || err.message);
+    res.status(500).json({ error: 'Failed to fetch leaderboard scores' });
+  }
+});
 // Start server
 app.listen(port, () => {
   console.log(`✅ osu! beatmap API proxy running at http://localhost:${port}`);

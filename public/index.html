@@ -1,80 +1,66 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>osu! Beatmap Search</title>
+  <title>osu! Leaderboard Viewer</title>
   <style>
-    body {
-      font-family: sans-serif;
-      background: #0d1117;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem;
-    }
-    input {
-      padding: 0.5rem;
-      font-size: 1rem;
-      width: 300px;
-      border-radius: 5px;
-      border: none;
-    }
-    button {
-      margin-top: 1rem;
-      padding: 0.5rem 1rem;
-      font-size: 1rem;
-      background-color: #1f6feb;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #388bfd;
-    }
-    .result {
-      margin-top: 2rem;
-      text-align: center;
-    }
-    .cover {
-      margin-top: 1rem;
-      max-width: 400px;
-      border-radius: 10px;
-    }
-    audio {
-      margin-top: 1rem;
-    }
+    body { font-family: sans-serif; text-align: center; padding: 2rem; }
+    input, button { padding: 0.6rem 1rem; font-size: 1rem; }
+    input { width: 250px; }
+    table { margin: 2rem auto; border-collapse: collapse; width: 90%; }
+    th, td { border: 1px solid #ccc; padding: 8px; }
+    a { color: #0077cc; text-decoration: none; }
   </style>
 </head>
 <body>
-  <h1>osu! Beatmap Search by Title</h1>
-  <input id="titleInput" placeholder="e.g. Camellia - Quarks (Noffy)" />
-  <button onclick="searchBeatmap()">Search</button>
+  <h1>osu! Global Leaderboard Scores</h1>
+  <input id="username" placeholder="Enter osu! username">
+  <button onclick="fetchScores()">Fetch</button>
 
-  <div class="result" id="result"></div>
+  <div id="loading" style="margin-top: 1rem;"></div>
+  <table id="results"></table>
 
   <script>
-    function searchBeatmap() {
-      const title = document.getElementById("titleInput").value.trim();
-      const resultBox = document.getElementById("result");
-      resultBox.innerHTML = "Searching...";
+    async function fetchScores() {
+      const user = document.getElementById('username').value;
+      const loading = document.getElementById('loading');
+      const table = document.getElementById('results');
 
-      fetch("https://osu-api-proxy.onrender.com/api/search?q=" + encodeURIComponent(title))
-        .then(res => {
-          if (!res.ok) throw new Error("Not found");
-          return res.json();
-        })
-        .then(data => {
-          resultBox.innerHTML = `
-            <p><strong>Title:</strong> <a href="${data.url}" target="_blank">${data.title}</a></p>
-            <img class="cover" src="${data.cover_url}" alt="Beatmap cover" />
-            <audio controls src="${data.preview_url}"></audio>
+      loading.innerText = "Loading...";
+      table.innerHTML = "";
+
+      try {
+        const res = await fetch(`/api/leaderboard-scores?user=${user}`);
+        const scores = await res.json();
+
+        if (!Array.isArray(scores)) {
+          loading.innerText = "Error: " + (scores.error || "Unexpected response");
+          return;
+        }
+
+        loading.innerText = "";
+        table.innerHTML = `
+          <tr><th>Rank</th><th>Beatmap</th><th>Score</th><th>Accuracy</th><th>Mods</th></tr>
+        `;
+
+        scores.forEach(s => {
+          table.innerHTML += `
+            <tr>
+              <td>#${s.rank}</td>
+              <td><a href="${s.beatmap.url}" target="_blank">${s.beatmap.title}</a></td>
+              <td>${s.score.toLocaleString()}</td>
+              <td>${s.accuracy}</td>
+              <td>${s.mods}</td>
+            </tr>
           `;
-        })
-        .catch(err => {
-          resultBox.innerHTML = `<p style="color: red;">No results found.</p>`;
         });
+
+        if (scores.length === 0) {
+          loading.innerText = "No leaderboard scores found.";
+        }
+      } catch (err) {
+        loading.innerText = "Failed to load data.";
+        console.error(err);
+      }
     }
   </script>
 </body>
