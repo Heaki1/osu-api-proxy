@@ -1,67 +1,69 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>osu! Leaderboard Viewer</title>
+  <title>osu! Algeria Top 50 Leaderboard</title>
   <style>
     body { font-family: sans-serif; text-align: center; padding: 2rem; }
-    input, button { padding: 0.6rem 1rem; font-size: 1rem; }
-    input { width: 250px; }
-    table { margin: 2rem auto; border-collapse: collapse; width: 90%; }
-    th, td { border: 1px solid #ccc; padding: 8px; }
+    table { margin: 2rem auto; border-collapse: collapse; width: 95%; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #f4f4f4; }
     a { color: #0077cc; text-decoration: none; }
+    #loading { margin-top: 1rem; }
   </style>
 </head>
 <body>
-  <h1>osu! Global Leaderboard Scores</h1>
-  <input id="username" placeholder="Enter osu! username">
-  <button onclick="fetchScores()">Fetch</button>
-
-  <div id="loading" style="margin-top: 1rem;"></div>
+  <h1>🇩🇿 osu! Algeria Top 50 Leaderboard</h1>
+  <div id="loading">Loading leaderboard...</div>
   <table id="results"></table>
 
   <script>
-    async function fetchScores() {
-      const user = document.getElementById('username').value;
+    async function fetchAlgeriaLeaderboard() {
       const loading = document.getElementById('loading');
       const table = document.getElementById('results');
 
-      loading.innerText = "Loading...";
-      table.innerHTML = "";
-
       try {
-        const res = await fetch(`/api/leaderboard-scores?user=${user}`);
+        const res = await fetch('https://osu-api-proxy.onrender.com/api/algeria-top50');
         const scores = await res.json();
 
-        if (!Array.isArray(scores)) {
-          loading.innerText = "Error: " + (scores.error || "Unexpected response");
+        if (!Array.isArray(scores) || scores.length === 0) {
+          loading.innerText = "No Algerian scores found in top 50.";
           return;
         }
 
         loading.innerText = "";
         table.innerHTML = `
-          <tr><th>Rank</th><th>Beatmap</th><th>Score</th><th>Accuracy</th><th>Mods</th></tr>
+          <tr>
+            <th>Rank</th>
+            <th>Player</th>
+            <th>Beatmap</th>
+            <th>Score</th>
+            <th>Accuracy</th>
+            <th>Mods</th>
+            <th>Last Updated</th>
+          </tr>
         `;
 
         scores.forEach(s => {
+          const updatedDate = new Date(s.last_updated).toLocaleString();
           table.innerHTML += `
             <tr>
               <td>#${s.rank}</td>
-              <td><a href="${s.beatmap.url}" target="_blank">${s.beatmap.title}</a></td>
-              <td>${s.score.toLocaleString()}</td>
+              <td>${s.username}</td>
+              <td><a href="https://osu.ppy.sh/beatmaps/${s.beatmap_id}" target="_blank">${s.beatmap_title}</a></td>
+              <td>${Number(s.score).toLocaleString()}</td>
               <td>${s.accuracy}</td>
               <td>${s.mods}</td>
+              <td>${updatedDate}</td>
             </tr>
           `;
         });
-
-        if (scores.length === 0) {
-          loading.innerText = "No leaderboard scores found.";
-        }
       } catch (err) {
         loading.innerText = "Failed to load data.";
         console.error(err);
       }
     }
+
+    fetchAlgeriaLeaderboard();
   </script>
 </body>
 </html>
