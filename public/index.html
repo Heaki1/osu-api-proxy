@@ -86,7 +86,7 @@
       const table = document.getElementById('results');
 
       try {
-        const res = await fetch('https://osu-api-proxy.onrender.com/api/algeria-top50');
+        const res = await fetch('/api/algeria-top50');
         const scores = await res.json();
 
         if (!Array.isArray(scores) || scores.length === 0) {
