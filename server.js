@@ -302,6 +302,38 @@ app.get('/api/algeria-top50', async (req, res) => {
   }
 });
 
+app.get('/api/user-scores', async (req, res) => {
+    const username = req.query.username;
+    if (!username) {
+        return res.status(400).json({ error: 'Username is required' });
+    }
+
+    const cacheKey = `user-scores-${username}`;
+    if (cache.has(cacheKey)) {
+        return res.json(cache.get(cacheKey));
+    }
+
+    try {
+        // 1. Get user ID from username
+        const userResponse = await axios.get(`https://osu.ppy.sh/api/v2/users/${encodeURIComponent(username)}/osu`, {
+            headers: { Authorization: `Bearer ${process.env.OSU_API_TOKEN}` }
+        });
+        const userId = userResponse.data.id;
+
+        // 2. Get all ranked beatmaps and check if user is in top 50
+        const beatmapResponse = await axios.get(`https://osu.ppy.sh/api/v2/users/${userId}/scores/best?mode=osu&limit=100`, {
+            headers: { Authorization: `Bearer ${process.env.OSU_API_TOKEN}` }
+        });
+
+        cache.set(cacheKey, beatmapResponse.data);
+        res.json(beatmapResponse.data);
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: 'Failed to fetch user scores' });
+    }
+});
+
 // Small helper endpoints
 app.get('/api/beatmap/:id', async (req, res) => {
   try {

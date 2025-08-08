@@ -79,6 +79,16 @@
   <h1>🇩🇿 osu! Algeria Top 50 Leaderboard</h1>
   <div id="loading">Loading leaderboard...</div>
   <table id="results"></table>
+<!-- User Search Form -->
+<div style="margin-bottom: 20px; text-align: center;">
+  <form id="searchForm">
+    <input type="text" id="usernameInput" placeholder="Enter osu! username" required>
+    <button type="submit">Search</button>
+  </form>
+</div>
+
+<!-- Search Results -->
+<div id="searchResults" style="margin-top: 20px; text-align: center;"></div>
 
   <script>
     async function fetchAlgeriaLeaderboard() {
