@@ -1,14 +1,78 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>osu! Algeria Top 50 Leaderboard</title>
   <style>
-    body { font-family: sans-serif; text-align: center; padding: 2rem; }
-    table { margin: 2rem auto; border-collapse: collapse; width: 95%; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    th { background: #f4f4f4; }
-    a { color: #0077cc; text-decoration: none; }
-    #loading { margin-top: 1rem; }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background-color: #fefefe;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+
+    h1 {
+      background-color: #ff66aa;
+      color: white;
+      padding: 1rem;
+      margin: 0;
+      font-size: 1.8rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    table {
+      margin: 2rem auto;
+      border-collapse: collapse;
+      width: 95%;
+      max-width: 1200px;
+      background-color: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 10px 14px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #ffb3d9;
+      color: #333;
+      font-size: 1rem;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    tr:hover {
+      background-color: #ffe6f2;
+    }
+
+    a {
+      color: #ff3399;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .flag {
+      width: 20px;
+      height: 14px;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    #loading {
+      margin-top: 1rem;
+      font-size: 1.2rem;
+      color: #555;
+    }
   </style>
 </head>
 <body>
@@ -48,7 +112,7 @@
           table.innerHTML += `
             <tr>
               <td>#${s.rank}</td>
-              <td>${s.username}</td>
+              <td><img class="flag" src="https://osu.ppy.sh/images/flags/DZ.png" alt="DZ">${s.username}</td>
               <td><a href="https://osu.ppy.sh/beatmaps/${s.beatmap_id}" target="_blank">${s.beatmap_title}</a></td>
               <td>${Number(s.score).toLocaleString()}</td>
               <td>${s.accuracy}</td>
