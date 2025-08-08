@@ -176,14 +176,49 @@ async function fetchLeaderboard(beatmapId, beatmapTitle) {
 // Get all beatmaps once (for demo, limit to 100 maps)
 async function getAllBeatmaps() {
   const token = await getAccessToken();
-  const res = await axios.get('https://osu.ppy.sh/api/v2/beatmapsets/search', {
-    headers: { Authorization: `Bearer ${token}` },
-    params: { mode: 'osu', nsfw: false, sort: 'ranked_desc' }
-  });
+  let allBeatmaps = [];
+  let page = 1;
 
-  return res.data.beatmapsets.flatMap(set =>
-    set.beatmaps.map(bm => ({ id: bm.id, title: `${set.artist} - ${set.title} [${bm.version}]` }))
-  );
+  while (true) {
+    console.log(`📄 Fetching beatmap page ${page}...`);
+    try {
+      const res = await axios.get('https://osu.ppy.sh/api/v2/beatmapsets/search', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          mode: 'osu',
+          nsfw: false,
+          sort: 'ranked_desc',
+          page
+        }
+      });
+
+      const sets = res.data.beatmapsets || [];
+      if (sets.length === 0) {
+        console.log("✅ No more pages to fetch.");
+        break;
+      }
+
+      const beatmaps = sets.flatMap(set =>
+        set.beatmaps.map(bm => ({
+          id: bm.id,
+          title: `${set.artist} - ${set.title} [${bm.version}]`
+        }))
+      );
+
+      allBeatmaps.push(...beatmaps);
+      page++;
+
+      // Small delay to avoid triggering osu! API rate limits
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+    } catch (err) {
+      console.error(`❌ Failed to fetch page ${page}:`, err.response?.data || err.message);
+      break;
+    }
+  }
+
+  console.log(`📊 Total beatmaps fetched: ${allBeatmaps.length}`);
+  return allBeatmaps;
 }
 
 // Periodic update
