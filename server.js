@@ -235,53 +235,59 @@ async function getAllBeatmaps() {
 }
 
 // Progress helpers
-async function getProgress(key) {
-  const row = await getAsync('SELECT value FROM progress WHERE key = ?', [key]);
-  return row ? row.value : null;
+function getProgress(key) {
+  return new Promise((resolve, reject) => {
+    db.get(`SELECT value FROM progress WHERE key = ?`, [key], (err, row) => {
+      if (err) return reject(err);
+      resolve(row ? row.value : null);
+    });
+  });
 }
-async function saveProgress(key, value) {
-  await runAsync('INSERT OR REPLACE INTO progress (key, value) VALUES (?, ?)', [key, String(value)]);
+
+function saveProgress(key, value) {
+  return new Promise((resolve, reject) => {
+    db.run(`INSERT OR REPLACE INTO progress (key, value) VALUES (?, ?)`, [key, value], (err) => {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
 }
 
 // Continuous/resumable update function
 async function updateLeaderboards() {
-  console.log('🔄 Starting updateLeaderboards...');
+  console.log("🔄 Updating Algerian leaderboards...");
 
+  // Fetch all beatmaps
   const beatmaps = await getAllBeatmaps();
-  if (!beatmaps || beatmaps.length === 0) {
-    console.log('⚠️ No beatmaps retrieved, aborting this run.');
-    return;
-  }
+  const lastId = await getProgress("last_beatmap_id");
 
-  const lastId = await getProgress('last_beatmap_id');
+  // If we have a last scanned ID, start from it
   let startIndex = 0;
   if (lastId) {
     const idx = beatmaps.findIndex(b => b.id == lastId);
-    if (idx >= 0 && idx < beatmaps.length - 1) startIndex = idx + 1;
-    else if (idx === beatmaps.length - 1) startIndex = 0; // completed last map -> start over
-  }
-
-  console.log(`📌 Resuming from index ${startIndex}/${beatmaps.length}`);
-
-  // iterate sequentially to minimize concurrency problems; limiter still wraps actual API calls
-  for (let i = startIndex; i < beatmaps.length; i++) {
-    const bm = beatmaps[i];
-
-    // schedule fetch on Bottleneck limiter
-    try {
-      await limiter.schedule(() => fetchLeaderboard(bm.id, bm.title));
-    } catch (err) {
-      console.warn('⚠️ limiter.schedule error:', err.message || err);
+    if (idx >= 0 && idx < beatmaps.length - 1) {
+      startIndex = idx + 1; // start after the last one
     }
-
-    // save progress so we can resume if server restarts
-    await saveProgress('last_beatmap_id', bm.id);
-
-    // tiny pause to reduce continuous-pressure on API
-    await sleep(200);
   }
 
-  console.log('✅ Finished complete pass of beatmaps (next run will resume from start or continuation).');
+  // Slice the list from where we left off
+  const mapsToScan = beatmaps.slice(startIndex);
+
+  console.log(`📌 Resuming scan from index ${startIndex} of ${beatmaps.length}`);
+
+  // Loop through maps with rate limiting
+  for (let i = 0; i < mapsToScan.length; i++) {
+    const bm = mapsToScan[i];
+    await limiter.schedule(() => fetchLeaderboard(bm.id, bm.title));
+
+    // Save progress after each map
+    await saveProgress("last_beatmap_id", bm.id);
+
+    // Small pause to avoid token expiry on huge scans
+    await new Promise(res => setTimeout(res, 500));
+  }
+
+  console.log("✅ Finished scan, starting over next run.");
 }
 
 // API endpoint to get cached Algerian scores (optional query ?limit=100)
