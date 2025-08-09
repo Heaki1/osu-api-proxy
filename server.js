@@ -290,16 +290,19 @@ const rows = await getRows(
   }
 });
 
-// API: search player scores from DB
+// API: search player scores from DB (no limit, partial match)
 app.get('/api/player-scores', async (req, res) => {
   try {
     const username = req.query.username;
     if (!username) return res.status(400).json({ error: 'Username required' });
 
     const rows = await getRows(
-      `SELECT * FROM algeria_top50 WHERE username ILIKE $1 ORDER BY score DESC`,
-      [username]
+      `SELECT * FROM algeria_top50
+       WHERE username ILIKE $1
+       ORDER BY score DESC`,
+      [`%${username}%`] // partial + case-insensitive
     );
+
     res.json(rows);
   } catch (err) {
     log('❌ /api/player-scores DB error:', err.message || err);
