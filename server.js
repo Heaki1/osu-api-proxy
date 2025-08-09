@@ -1,4 +1,4 @@
-// server.js — Postgres version, no SQLite
+// server.js — Postgres version with wraparound, sorting, stats
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
@@ -10,14 +10,19 @@ const { Pool } = require('pg');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// timestamped logs
+function log(...args) {
+  const ts = new Date().toISOString().replace('T', ' ').split('.')[0];
+  console.log(`[${ts}]`, ...args);
+}
+
 // DB pool
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  // Uncomment for some external connections:
-  // ssl: { rejectUnauthorized: false }
+  // ssl: { rejectUnauthorized: false } // enable if needed externally
 });
 
-// helper query wrappers
+// DB helpers
 async function query(sql, params = []) {
   return pool.query(sql, params);
 }
@@ -30,7 +35,7 @@ async function getRow(sql, params = []) {
   return res.rows[0];
 }
 
-// create tables
+// ensure tables exist
 async function ensureTables() {
   await query(`
     CREATE TABLE IF NOT EXISTS algeria_top50 (
@@ -65,7 +70,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// format seconds into mm:ss
+// format mm:ss
 function formatSeconds(seconds) {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
@@ -86,16 +91,15 @@ async function getAccessToken() {
 
   access_token = response.data.access_token;
   token_expiry = now + (response.data.expires_in * 1000) - 10000;
-  console.log('🔑 Obtained new osu! token (expires in', response.data.expires_in, 's)');
+  log('🔑 Obtained new osu! token (expires in', response.data.expires_in, 's)');
   return access_token;
 }
 
-// rate limiter
+// limiter
 const limiter = new Bottleneck({
   maxConcurrent: 3,
   minTime: 600
 });
-
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 
 // fetch leaderboard for one beatmap
@@ -153,7 +157,7 @@ async function fetchLeaderboard(beatmapId, beatmapTitle) {
             );
           }
           await client.query('COMMIT');
-          console.log(`🇩🇿 Saved ${algerianScores.length} Algerian scores for map ${beatmapId}`);
+          log(`🇩🇿 Saved ${algerianScores.length} Algerian scores for map ${beatmapId}`);
         } catch (e) {
           await client.query('ROLLBACK');
           throw e;
@@ -164,7 +168,7 @@ async function fetchLeaderboard(beatmapId, beatmapTitle) {
       return;
     } catch (err) {
       const status = err.response?.status;
-      console.warn(`⚠️ fetchLeaderboard error for ${beatmapId} (attempt ${attempt + 1}):`, err.response?.data || err.message);
+      log(`⚠️ fetchLeaderboard error for ${beatmapId} (attempt ${attempt + 1}):`, err.response?.data || err.message);
       if (status === 401) {
         access_token = null;
         attempt++;
@@ -173,7 +177,7 @@ async function fetchLeaderboard(beatmapId, beatmapTitle) {
       }
       if (status === 429) {
         const wait = (2 ** attempt) * 1000 + 1000;
-        console.warn(`⏳ Rate limited on ${beatmapId}, waiting ${wait}ms before retry`);
+        log(`⏳ Rate limited on ${beatmapId}, waiting ${wait}ms before retry`);
         await sleep(wait);
         attempt++;
         continue;
@@ -190,7 +194,7 @@ async function getAllBeatmaps() {
   while (true) {
     try {
       const token = await getAccessToken();
-      console.log(`📄 Fetching beatmap page ${page}...`);
+      log(`📄 Fetching beatmap page ${page}...`);
       const res = await axios.get('https://osu.ppy.sh/api/v2/beatmapsets/search', {
         headers: { Authorization: `Bearer ${token}` },
         params: { mode: 'osu', nsfw: false, sort: 'ranked_desc', page }
@@ -209,11 +213,11 @@ async function getAllBeatmaps() {
       page++;
       await sleep(500);
     } catch (err) {
-      console.error(`❌ Failed to fetch beatmap page ${page}:`, err.response?.data || err.message);
+      log(`❌ Failed to fetch beatmap page ${page}:`, err.response?.data || err.message);
       break;
     }
   }
-  console.log(`📊 Total beatmaps fetched: ${allBeatmaps.length}`);
+  log(`📊 Total beatmaps fetched: ${allBeatmaps.length}`);
   return allBeatmaps;
 }
 
@@ -230,20 +234,26 @@ async function saveProgress(key, value) {
   );
 }
 
-// main update function
+// main update function with wraparound
 async function updateLeaderboards() {
-  console.log("🔄 Updating Algerian leaderboards...");
+  log("🔄 Updating Algerian leaderboards...");
   const beatmaps = await getAllBeatmaps();
   const lastId = await getProgress("last_beatmap_id");
   let startIndex = 0;
+
   if (lastId) {
     const idx = beatmaps.findIndex(b => b.id == lastId);
     if (idx >= 0 && idx < beatmaps.length - 1) {
       startIndex = idx + 1;
+    } else {
+      log("🔁 Reached end of beatmaps, starting from beginning");
+      await saveProgress("last_beatmap_id", null);
+      startIndex = 0;
     }
   }
+
   const mapsToScan = beatmaps.slice(startIndex);
-  console.log(`📌 Resuming scan from index ${startIndex} of ${beatmaps.length}`);
+  log(`📌 Scanning from index ${startIndex} of ${beatmaps.length}`);
 
   for (let i = 0; i < mapsToScan.length; i++) {
     const bm = mapsToScan[i];
@@ -251,27 +261,70 @@ async function updateLeaderboards() {
     await saveProgress("last_beatmap_id", bm.id);
     await sleep(500);
   }
-  console.log("✅ Finished scan, starting over next run.");
+  log("✅ Finished scan, ready for next run.");
 }
 
-// API endpoints
+// API: dynamic sorting + pagination
 app.get('/api/algeria-top50', async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit || '1000', 10);
+    const limit = parseInt(req.query.limit || '100', 10);
+    const offset = parseInt(req.query.offset || '0', 10);
+    const sort = req.query.sort || 'score';
+    const order = (req.query.order || 'DESC').toUpperCase();
+
+    const allowedSort = ['score', 'rank', 'last_updated'];
+    if (!allowedSort.includes(sort)) return res.status(400).json({ error: 'Invalid sort column' });
+    if (!['ASC', 'DESC'].includes(order)) return res.status(400).json({ error: 'Invalid sort order' });
+
     const rows = await getRows(
-      'SELECT * FROM algeria_top50 ORDER BY score DESC LIMIT $1',
-      [limit]
+      `SELECT * FROM algeria_top50 ORDER BY ${sort} ${order} LIMIT $1 OFFSET $2`,
+      [limit, offset]
     );
     res.json(rows);
   } catch (err) {
-    console.error('❌ /api/algeria-top50 DB error:', err.message || err);
+    log('❌ /api/algeria-top50 DB error:', err.message || err);
     res.status(500).json({ error: 'DB error' });
   }
 });
 
-// start server
+// API: search player scores from DB
+app.get('/api/player-scores', async (req, res) => {
+  try {
+    const username = req.query.username;
+    if (!username) return res.status(400).json({ error: 'Username required' });
+
+    const rows = await getRows(
+      `SELECT * FROM algeria_top50 WHERE username ILIKE $1 ORDER BY score DESC`,
+      [username]
+    );
+    res.json(rows);
+  } catch (err) {
+    log('❌ /api/player-scores DB error:', err.message || err);
+    res.status(500).json({ error: 'DB error' });
+  }
+});
+
+// API: stats
+app.get('/api/stats', async (req, res) => {
+  try {
+    const totalScores = await getRow(`SELECT COUNT(*) FROM algeria_top50`);
+    const totalBeatmaps = await getRow(`SELECT COUNT(DISTINCT beatmap_id) FROM algeria_top50`);
+    const lastUpdate = await getRow(`SELECT MAX(last_updated) FROM algeria_top50`);
+
+    res.json({
+      totalScores: parseInt(totalScores.count, 10),
+      totalBeatmaps: parseInt(totalBeatmaps.count, 10),
+      lastUpdated: lastUpdate.max ? parseInt(lastUpdate.max, 10) : null
+    });
+  } catch (err) {
+    log('❌ /api/stats DB error:', err.message || err);
+    res.status(500).json({ error: 'DB error' });
+  }
+});
+
+// start server + schedule updates
 app.listen(port, async () => {
-  console.log(`✅ osu! Algerian leaderboard tracker running at http://localhost:${port}`);
+  log(`✅ osu! Algerian leaderboard tracker running at http://localhost:${port}`);
   await ensureTables();
   await updateLeaderboards();
   setInterval(updateLeaderboards, 30 * 60 * 1000);
