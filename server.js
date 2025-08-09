@@ -1,4 +1,4 @@
-// server.js — Postgres version with wraparound, sorting, stats, progress, priority scan FIXED
+// server.js — Postgres version with wraparound, sorting, stats, progress, priority scan + REAL-TIME PROGRESS FIX
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
@@ -177,10 +177,9 @@ async function updateLeaderboards() {
   log("🔄 Updating Algerian leaderboards...");
   const beatmaps = await getAllBeatmaps();
 
-  // Store total count for progress tracking
   await saveProgress("total_beatmaps", beatmaps.length);
+  await saveProgress("current_index", 0);
 
-  // FIX: Priority scan without DISTINCT crash
   const priorityBeatmaps = await getRows(`
     SELECT beatmap_id, MIN(beatmap_title) AS beatmap_title
     FROM algeria_top50
@@ -215,6 +214,7 @@ async function updateLeaderboards() {
     const bm = mapsToScan[i];
     await limiter.schedule(() => fetchLeaderboard(bm.id, bm.title));
     await saveProgress("last_beatmap_id", bm.id);
+    await saveProgress("current_index", startIndex + i + 1);
     await sleep(500);
   }
   log("✅ Finished scan, ready for next run.");
@@ -274,20 +274,18 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-// Scan progress
+// Scan progress endpoint
 app.get('/api/scan-progress', async (req, res) => {
   try {
     const total = await getProgress("total_beatmaps");
-    const lastId = await getProgress("last_beatmap_id");
-    if (!total) return res.json({ processed: 0, total: null, percentage: "0.00" });
-
-    let processedIndex = 0;
-    if (lastId) processedIndex = parseInt(lastId, 10);
-
+    const currentIndex = await getProgress("current_index");
+    if (!total) {
+      return res.json({ processed: 0, total: null, percentage: "0.00" });
+    }
     res.json({
-      processed: processedIndex,
+      processed: parseInt(currentIndex || 0, 10),
       total: parseInt(total, 10),
-      percentage: ((processedIndex / parseInt(total, 10)) * 100).toFixed(2)
+      percentage: ((parseInt(currentIndex || 0, 10) / parseInt(total, 10)) * 100).toFixed(2)
     });
   } catch (err) {
     log('❌ /api/scan-progress error:', err.message || err);
@@ -295,7 +293,7 @@ app.get('/api/scan-progress', async (req, res) => {
   }
 });
 
-// Serve scan status HTML page
+// Scan status page
 app.get('/scan-status', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -319,7 +317,6 @@ app.get('/scan-status', (req, res) => {
       <div class="stats">
         <p>Processed: <span id="processed">0</span> / <span id="total">0</span></p>
       </div>
-
       <script>
         async function updateProgress() {
           try {
@@ -338,8 +335,8 @@ app.get('/scan-status', (req, res) => {
             console.error('Error fetching progress', err);
           }
         }
+        updateProgress(); // immediate load
         setInterval(updateProgress, 5000);
-        updateProgress();
       </script>
     </body>
     </html>
