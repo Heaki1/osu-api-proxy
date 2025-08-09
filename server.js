@@ -276,10 +276,13 @@ app.get('/api/algeria-top50', async (req, res) => {
     if (!allowedSort.includes(sort)) return res.status(400).json({ error: 'Invalid sort column' });
     if (!['ASC', 'DESC'].includes(order)) return res.status(400).json({ error: 'Invalid sort order' });
 
-    const rows = await getRows(
-      `SELECT * FROM algeria_top50 ORDER BY ${sort} ${order} LIMIT $1 OFFSET $2`,
-      [limit, offset]
-    );
+const rows = await getRows(
+  `SELECT * FROM algeria_top50
+   WHERE username ILIKE $1
+   ORDER BY score DESC`,
+  [`%${username}%`]
+);
+
     res.json(rows);
   } catch (err) {
     log('❌ /api/algeria-top50 DB error:', err.message || err);
