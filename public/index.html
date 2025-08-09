@@ -11,7 +11,6 @@
       margin: 0;
       padding: 0;
     }
-
     h1 {
       background-color: #ff66aa;
       color: white;
@@ -20,7 +19,6 @@
       font-size: 1.8rem;
       box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
-
     table {
       margin: 2rem auto;
       border-collapse: collapse;
@@ -31,86 +29,83 @@
       border-radius: 6px;
       overflow: hidden;
     }
-
-    th, td {
-      padding: 10px 14px;
-      text-align: center;
+    th, td { padding: 10px 14px; text-align: center; }
+    th { background-color: #ffb3d9; color: #333; font-size: 1rem; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    tr:hover { background-color: #ffe6f2; }
+    a { color: #ff3399; text-decoration: none; font-weight: bold; }
+    a:hover { text-decoration: underline; }
+    .flag { width: 20px; height: 14px; vertical-align: middle; margin-right: 6px; }
+    #loading { margin-top: 1rem; font-size: 1.2rem; color: #555; }
+    /* Progress bar */
+    #progressContainer {
+      width: 80%;
+      max-width: 500px;
+      margin: 10px auto;
+      background-color: #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+      height: 20px;
     }
-
-    th {
-      background-color: #ffb3d9;
-      color: #333;
-      font-size: 1rem;
-    }
-
-    tr:nth-child(even) {
-      background-color: #f9f9f9;
-    }
-
-    tr:hover {
-      background-color: #ffe6f2;
-    }
-
-    a {
-      color: #ff3399;
-      text-decoration: none;
-      font-weight: bold;
-    }
-
-    a:hover {
-      text-decoration: underline;
-    }
-
-    .flag {
-      width: 20px;
-      height: 14px;
-      vertical-align: middle;
-      margin-right: 6px;
-    }
-
-    #loading {
-      margin-top: 1rem;
-      font-size: 1.2rem;
-      color: #555;
-    }
-
-    #searchResults table {
-      margin-top: 1rem;
+    #progressBar {
+      height: 100%;
+      background-color: #ff66aa;
+      width: 0%;
+      transition: width 0.5s ease;
     }
   </style>
 </head>
 <body>
   <h1>🇩🇿 osu! Algeria Top 50 Leaderboard</h1>
 
-  <!-- Search Form -->
-  <div style="margin-top: 20px; text-align: center;">
+  <!-- Progress -->
+  <div id="progressContainer">
+    <div id="progressBar"></div>
+  </div>
+  <div id="progressText">Loading scan progress...</div>
+
+  <!-- Leaderboard -->
+  <div id="loading">Loading leaderboard...</div>
+  <table id="results"></table>
+
+  <!-- User Search Form -->
+  <div style="margin-bottom: 20px; text-align: center;">
     <form id="searchForm">
       <input type="text" id="usernameInput" placeholder="Enter osu! username" required>
       <button type="submit">Search</button>
     </form>
   </div>
-
-  <div id="loading">Loading leaderboard...</div>
-  <table id="results"></table>
-
-  <!-- Search Results -->
   <div id="searchResults" style="margin-top: 20px; text-align: center;"></div>
 
   <script>
-    // Fetch and display Algeria Top 50
+    async function fetchScanProgress() {
+      try {
+        const res = await fetch('/api/scan-progress');
+        const data = await res.json();
+        const bar = document.getElementById('progressBar');
+        const text = document.getElementById('progressText');
+
+        if (data.total > 0) {
+          bar.style.width = `${data.percentage}%`;
+          text.innerText = `Scan progress: ${data.processed} / ${data.total} beatmaps (${data.percentage}%)`;
+        } else {
+          text.innerText = 'No scan data available';
+        }
+      } catch (err) {
+        console.error('Progress fetch failed', err);
+      }
+    }
+
     async function fetchAlgeriaLeaderboard() {
       const loading = document.getElementById('loading');
       const table = document.getElementById('results');
-
       try {
         const res = await fetch('/api/algeria-top50');
         const scores = await res.json();
-
         if (!Array.isArray(scores) || scores.length === 0) {
           loading.innerText = "No Algerian scores found in top 50.";
           return;
         }
-
         loading.innerText = "";
         table.innerHTML = `
           <tr>
@@ -123,9 +118,8 @@
             <th>Last Updated</th>
           </tr>
         `;
-
         scores.forEach(s => {
-          const updatedDate = new Date(Number(s.last_updated)).toLocaleString();
+          const updatedDate = new Date(s.last_updated).toLocaleString();
           table.innerHTML += `
             <tr>
               <td>#${s.rank}</td>
@@ -144,62 +138,46 @@
       }
     }
 
-    // Search player scores from DB
-    async function searchPlayerScores(username) {
-      const resultsDiv = document.getElementById('searchResults');
-      resultsDiv.innerHTML = "Searching...";
-
+    async function searchPlayer(username) {
       try {
-        const res = await fetch(`/api/player-scores?username=${encodeURIComponent(username)}&limit=50`);
+        const res = await fetch(`/api/player-scores?username=${encodeURIComponent(username)}`);
         const scores = await res.json();
-
+        const resultsDiv = document.getElementById('searchResults');
         if (!Array.isArray(scores) || scores.length === 0) {
-          resultsDiv.innerHTML = `<p>No scores found for "${username}".</p>`;
+          resultsDiv.innerHTML = "<p>No scores found for this player.</p>";
           return;
         }
-
-        let html = `<h2>Top Scores for ${username}</h2>`;
-        html += `<table>
-          <tr>
-            <th>Rank</th>
-            <th>Beatmap</th>
-            <th>Score</th>
-            <th>Accuracy</th>
-            <th>Mods</th>
-            <th>Last Updated</th>
-          </tr>`;
-
+        let html = `<h3>Scores for ${username}</h3><table style="margin:auto;"><tr>
+          <th>Rank</th><th>Beatmap</th><th>Score</th><th>Accuracy</th><th>Mods</th>
+        </tr>`;
         scores.forEach(s => {
-          const updatedDate = new Date(Number(s.last_updated)).toLocaleString();
-          html += `
-            <tr>
-              <td>#${s.rank}</td>
-              <td><a href="https://osu.ppy.sh/beatmaps/${s.beatmap_id}" target="_blank">${s.beatmap_title}</a></td>
-              <td>${Number(s.score).toLocaleString()}</td>
-              <td>${s.accuracy}</td>
-              <td>${s.mods}</td>
-              <td>${updatedDate}</td>
-            </tr>
-          `;
+          html += `<tr>
+            <td>#${s.rank}</td>
+            <td><a href="https://osu.ppy.sh/beatmaps/${s.beatmap_id}" target="_blank">${s.beatmap_title}</a></td>
+            <td>${Number(s.score).toLocaleString()}</td>
+            <td>${s.accuracy}</td>
+            <td>${s.mods}</td>
+          </tr>`;
         });
-
-        html += `</table>`;
+        html += "</table>";
         resultsDiv.innerHTML = html;
       } catch (err) {
-        resultsDiv.innerHTML = "Error fetching player scores.";
-        console.error(err);
+        console.error('Search failed', err);
       }
     }
 
-    // Attach search form handler
-    document.getElementById('searchForm').addEventListener('submit', function (e) {
+    // Event listener for search
+    document.getElementById('searchForm').addEventListener('submit', e => {
       e.preventDefault();
       const username = document.getElementById('usernameInput').value.trim();
-      if (username) searchPlayerScores(username);
+      if (username) searchPlayer(username);
     });
 
-    // Initial leaderboard fetch
+    // Initial load
     fetchAlgeriaLeaderboard();
+    fetchScanProgress();
+    // Refresh progress every 10 seconds
+    setInterval(fetchScanProgress, 10000);
   </script>
 </body>
 </html>
