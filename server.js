@@ -1,4 +1,4 @@
-// server.js — Postgres version with wraparound, sorting, stats, progress, priority scan + REAL-TIME PROGRESS FIX
+// server.js — Postgres version with wraparound, sorting, stats, progress, priority scan (fixed)
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
@@ -178,8 +178,8 @@ async function updateLeaderboards() {
   const beatmaps = await getAllBeatmaps();
 
   await saveProgress("total_beatmaps", beatmaps.length);
-  await saveProgress("current_index", 0);
 
+  // ✅ FIXED priority query (no DISTINCT crash)
   const priorityBeatmaps = await getRows(`
     SELECT beatmap_id, MIN(beatmap_title) AS beatmap_title
     FROM algeria_top50
@@ -195,26 +195,17 @@ async function updateLeaderboards() {
     }
   }
 
-  const lastId = await getProgress("last_beatmap_id");
-  let startIndex = 0;
-  if (lastId) {
-    const idx = beatmaps.findIndex(b => b.id == lastId);
-    if (idx >= 0 && idx < beatmaps.length - 1) {
-      startIndex = idx + 1;
-    } else {
-      log("🔁 Reached end of beatmaps, starting from beginning");
-      await saveProgress("last_beatmap_id", null);
-      startIndex = 0;
-    }
+  let startIndex = parseInt(await getProgress("last_index") || "0", 10);
+  if (startIndex >= beatmaps.length) {
+    log("🔁 Reached end of beatmaps, starting from beginning");
+    startIndex = 0;
   }
 
-  const mapsToScan = beatmaps.slice(startIndex);
   log(`📌 Scanning from index ${startIndex} of ${beatmaps.length}`);
-  for (let i = 0; i < mapsToScan.length; i++) {
-    const bm = mapsToScan[i];
+  for (let i = startIndex; i < beatmaps.length; i++) {
+    const bm = beatmaps[i];
     await limiter.schedule(() => fetchLeaderboard(bm.id, bm.title));
-    await saveProgress("last_beatmap_id", bm.id);
-    await saveProgress("current_index", startIndex + i + 1);
+    await saveProgress("last_index", i + 1);
     await sleep(500);
   }
   log("✅ Finished scan, ready for next run.");
@@ -274,18 +265,15 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-// Scan progress endpoint
 app.get('/api/scan-progress', async (req, res) => {
   try {
-    const total = await getProgress("total_beatmaps");
-    const currentIndex = await getProgress("current_index");
-    if (!total) {
-      return res.json({ processed: 0, total: null, percentage: "0.00" });
-    }
+    const total = parseInt(await getProgress("total_beatmaps") || "0", 10);
+    const processed = parseInt(await getProgress("last_index") || "0", 10);
+    if (total === 0) return res.json({ processed: 0, total: 0, percentage: "0.00" });
     res.json({
-      processed: parseInt(currentIndex || 0, 10),
-      total: parseInt(total, 10),
-      percentage: ((parseInt(currentIndex || 0, 10) / parseInt(total, 10)) * 100).toFixed(2)
+      processed,
+      total,
+      percentage: ((processed / total) * 100).toFixed(2)
     });
   } catch (err) {
     log('❌ /api/scan-progress error:', err.message || err);
@@ -293,7 +281,6 @@ app.get('/api/scan-progress', async (req, res) => {
   }
 });
 
-// Scan status page
 app.get('/scan-status', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -317,16 +304,12 @@ app.get('/scan-status', (req, res) => {
       <div class="stats">
         <p>Processed: <span id="processed">0</span> / <span id="total">0</span></p>
       </div>
+
       <script>
         async function updateProgress() {
           try {
             const res = await fetch('/api/scan-progress');
             const data = await res.json();
-            if (!data.total) {
-              document.getElementById('progress').style.width = '0%';
-              document.getElementById('progress').innerText = 'No data';
-              return;
-            }
             document.getElementById('processed').innerText = data.processed;
             document.getElementById('total').innerText = data.total;
             document.getElementById('progress').style.width = data.percentage + '%';
@@ -335,15 +318,14 @@ app.get('/scan-status', (req, res) => {
             console.error('Error fetching progress', err);
           }
         }
-        updateProgress(); // immediate load
         setInterval(updateProgress, 5000);
+        updateProgress();
       </script>
     </body>
     </html>
   `);
 });
 
-// Start server
 app.listen(port, async () => {
   log(`✅ osu! Algerian leaderboard tracker running at http://localhost:${port}`);
   await ensureTables();
