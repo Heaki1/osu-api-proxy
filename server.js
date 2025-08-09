@@ -193,11 +193,13 @@ async function updateLeaderboards() {
 
   // Priority scan
   const priorityBeatmaps = await getRows(`
-    SELECT DISTINCT beatmap_id, beatmap_title
+    SELECT beatmap_id, beatmap_title, MIN(last_updated) AS oldest_update
     FROM algeria_top50
-    ORDER BY last_updated ASC
+    GROUP BY beatmap_id, beatmap_title
+    ORDER BY oldest_update ASC
     LIMIT 100
   `);
+
   if (priorityBeatmaps.length > 0) {
     log(`⚡ Priority scanning ${priorityBeatmaps.length} known beatmaps`);
     for (const bm of priorityBeatmaps) {
